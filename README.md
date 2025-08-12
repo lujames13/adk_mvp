@@ -123,7 +123,7 @@ from google.adk import Agent
 from google.adk.tools import google_search
 from . import prompt
 
-MODEL = "gemini-1.5-pro"  # 選擇穩定可用的模型
+MODEL = "gemini-2.0-flash"  # 選擇穩定可用的模型
 
 search_agent = Agent(
     model=MODEL,
@@ -136,7 +136,6 @@ root_agent = search_agent
 ```
 
 **架構決策**:
-- 使用 `gemini-1.5-pro` 而非最新的 `gemini-2.0-flash` (可用性考量)
 - 單一工具整合 (Google Search)
 - 簡潔的 Agent 結構
 
@@ -160,7 +159,7 @@ from adk_mvp.agent import root_agent
 def test_agent_initialization():
     """測試 agent 是否正確初始化"""
     assert root_agent.name == "search_agent"
-    assert root_agent.model == "gemini-1.5-pro"
+    assert root_agent.model == "gemini-2.0-flash"
     assert len(root_agent.tools) > 0
 
 def test_agent_has_search_tool():
@@ -187,9 +186,8 @@ Publisher Model `gemini-2.0-flash` not found in asia-east1
 ```
 
 **解決方案**:
-1. 改用穩定的模型: `gemini-1.5-pro`
-2. 調整地區設置: `us-central1`
-3. 驗證模型可用性
+1. 調整地區設置: `us-central1`
+2. 驗證模型可用性
 
 #### 5.2 Poetry 工作流程適應
 **Poetry 2.0+ 變化**:
