@@ -1,2 +1,2 @@
-# adk-mvp
-basic adk develop mvp to get hands on adk
+# adk_mvp
+ADK MVP with Google Search tool
