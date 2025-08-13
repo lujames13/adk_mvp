@@ -1,290 +1,260 @@
-# ADK MVP - Development Journey
+# ADK MVP - Multi-Agent System
 
-> 從零開始構建 Google ADK Agent 的完整開發過程
+A Google ADK (Agent Development Kit) MVP project demonstrating multi-agent AI system architecture with specialized agents for search and financial analysis.
 
-## 項目概述
+## Overview
 
-這是一個記錄從零開始使用 Google ADK (Agent Development Kit) 開發 AI Search Assistant 的完整過程。本項目展示了如何在現代 Python 開發環境中，從環境設置到成功運行的每一個步驟。
+This project implements a coordinated multi-agent system using Google's ADK framework and Gemini models. It features an LLM coordinator that orchestrates specialized agents, each optimized for specific tasks.
 
-## 開發歷程
+## Architecture
 
-### 階段 1: 環境設置與項目初始化
+### Agent Hierarchy
+- **Root Agent**: `llm_coordinator` - Main entry point orchestrating specialized agents
+- **Specialized Agents**:
+  - `search_agent` - Google Search integration with `google_search` tool
+  - `financial_agent` - Financial analysis (LLM-only, no tools)
 
-#### 1.1 Poetry 項目初始化
-```bash
-# 創建項目目錄
-mkdir adk_mvp && cd adk_mvp
-
-# Poetry 交互式初始化
-poetry init
-```
-
-**關鍵學習**:
-- Poetry 2.0+ 移除了 `poetry shell` 命令
-- 推薦使用 `poetry run` 來執行命令，避免環境污染
-- 項目名稱可以使用連字符 (`adk-mvp`)，但 Python 包名必須使用下劃線 (`adk_mvp`)
-
-#### 1.2 依賴管理策略
-```toml
-[tool.poetry.dependencies]
-python = "^3.9"
-google-adk = "^1.0.0"
-google-cloud-aiplatform = {extras = ["agent-engines"], version = "^1.93.0"}
-google-genai = "^1.9.0"
-pydantic = "^2.10.6"
-python-dotenv = "^1.0.1"
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8.3.5"
-pytest-asyncio = "^1.1.0"
-```
-
-**依賴安裝過程**:
-```bash
-poetry install
-# 遇到錯誤: No file/folder found for package adk-mvp
-# 解決: 創建正確的 Python 包結構
-```
-
-#### 1.3 項目結構設計
+### Project Structure
 ```
 adk_mvp/
-├── adk_mvp/              # Python 包 (使用下劃線)
-│   ├── __init__.py
-│   ├── agent.py
-│   └── prompt.py
+├── adk_mvp/
+│   ├── __init__.py           # Package initialization
+│   ├── agent.py              # LLM coordinator and root agent
+│   ├── prompt.py             # Coordinator prompt
+│   └── sub_agents/           # Specialized agents
+│       ├── search_agent/     # Google Search agent
+│       │   ├── agent.py      # Agent with google_search tool
+│       │   └── prompt.py     # Search-specific instructions
+│       └── financial_agent/  # Financial analysis agent
+│           ├── agent.py      # LLM-only agent
+│           └── prompt.py     # Financial analysis instructions
 ├── tests/
-│   └── test_agent.py
-├── .env                  # 環境變數
-├── pyproject.toml        # Poetry 配置
+│   └── test_agent.py         # Agent tests
+├── .env                      # Environment configuration
+├── pyproject.toml            # Poetry dependencies
 └── README.md
 ```
 
-**重要發現**: Poetry 要求項目具有有效的 Python 包結構才能完成安裝。
+## Quick Start
 
-### 階段 2: Google Cloud 環境配置
+### Prerequisites
+- Python 3.9+
+- Google Cloud account with billing enabled
+- Poetry for dependency management
 
-#### 2.1 GCP 憑證設置
+### Installation
+
+1. **Clone and setup**:
 ```bash
-# 安裝 Google Cloud CLI
-gcloud --version
+git clone <repository-url>
+cd adk_mvp
+poetry install
+```
 
-# 認證流程
+2. **Google Cloud setup**:
+```bash
+# Authenticate
 gcloud auth login
 gcloud auth application-default login
 gcloud config set project YOUR_PROJECT_ID
-gcloud auth application-default set-quota-project YOUR_PROJECT_ID
-```
 
-#### 2.2 API 啟用
-```bash
-# 啟用必要的 Google Cloud APIs
+# Enable required APIs
 gcloud services enable aiplatform.googleapis.com
 gcloud services enable customsearch.googleapis.com
 gcloud services enable generativelanguage.googleapis.com
 ```
 
-#### 2.3 環境變數配置
+3. **Environment configuration**:
+Create `.env` file:
 ```bash
-# .env
 GOOGLE_GENAI_USE_VERTEXAI=1
 GOOGLE_CLOUD_PROJECT=your-project-id
 GOOGLE_CLOUD_LOCATION=us-central1
 ```
 
-**學習重點**: 地區選擇很重要，某些 AI 模型在特定地區不可用。
+### Running the System
 
-### 階段 3: 最簡 Agent 實現
+```bash
+# Start the multi-agent system
+poetry run adk run adk_mvp
 
-#### 3.1 Prompt 設計 (`adk_mvp/prompt.py`)
+# Run tests
+poetry run pytest tests/ -v
+```
+
+## How It Works
+
+### Multi-Agent Coordination
+
+The system uses a coordinator pattern where:
+
+1. **User Query** → `llm_coordinator` (root agent)
+2. **Coordinator** analyzes the query and determines which specialist agent to use
+3. **Specialist Agent** processes the request using its tools/expertise
+4. **Response** flows back through the coordinator to the user
+
+### Agent Capabilities
+
+#### LLM Coordinator
+- Routes queries to appropriate specialist agents
+- Combines responses from multiple agents when needed
+- Handles general queries that don't require specialized tools
+
+#### Search Agent  
+- Performs web searches using Google Search API
+- Provides current information and fact-checking
+- Cites sources with URLs
+
+#### Financial Agent
+- Analyzes financial data and trends
+- Provides investment insights and market analysis
+- Pure LLM-based reasoning (no external tools)
+
+## Technical Details
+
+### Model Configuration
+- All agents use `gemini-2.0-flash` model by default
+- Falls back to `gemini-1.5-pro` if newer models unavailable
+- Configured via environment variables for different regions
+
+### Dependencies
+```toml
+[tool.poetry.dependencies]
+python = "^3.9"
+google-adk = ">=1.10.0"
+google-cloud-aiplatform = ">=1.108.0" 
+google-genai = ">=1.29.0"
+pydantic = ">=2.11.7"
+python-dotenv = ">=1.1.1"
+```
+
+### Testing
+```bash
+# Run all tests
+poetry run pytest tests/ -v
+
+# Test specific functionality  
+poetry run pytest tests/test_agent.py::test_agent_initialization -v
+```
+
+## Usage Examples
+
+### Starting the System
+```bash
+poetry run adk run adk_mvp
+# Output: Running agent llm_coordinator, type exit to exit.
+```
+
+### Example Queries
+
+**Search-related queries** (routed to search_agent):
+- "What are the latest AI developments in 2024?"
+- "Current weather in San Francisco"
+- "Recent Python best practices"
+
+**Financial queries** (routed to financial_agent):
+- "Analyze the current market trends"
+- "What factors affect stock volatility?"
+- "Explain cryptocurrency market dynamics"
+
+**General queries** (handled by coordinator):
+- "Hello, how can you help me?"
+- "What agents are available?"
+
+## Development
+
+### Adding New Agents
+
+1. Create agent directory in `sub_agents/`:
+```bash
+mkdir adk_mvp/sub_agents/new_agent
+```
+
+2. Implement agent files:
 ```python
-SEARCH_AGENT_PROMPT = """
-You are a helpful search assistant powered by Google Search.
+# sub_agents/new_agent/agent.py
+from google.adk.agents import LlmAgent
 
-When a user asks a question:
-1. Use the Google Search tool to find relevant and current information
-2. Analyze the search results carefully
-3. Provide a clear, informative answer based on the findings
-4. Always cite your sources with URLs when possible
-5. If you can't find relevant information, clearly state that
+new_agent = LlmAgent(
+    model="gemini-2.0-flash",
+    name="new_agent", 
+    instruction="Agent instructions here",
+    tools=[]  # Add tools if needed
+)
 
-Be concise but comprehensive. Focus on accuracy and helpfulness.
+# sub_agents/new_agent/prompt.py
+NEW_AGENT_PROMPT = """
+Your agent instructions here...
 """
 ```
 
-**設計原則**: 
-- 明確定義 Agent 的行為
-- 具體說明工具使用方式
-- 強調準確性和來源引用
-
-#### 3.2 Agent 實現 (`adk_mvp/agent.py`)
+3. Register in main coordinator:
 ```python
-from google.adk import Agent
-from google.adk.tools import google_search
-from . import prompt
+# adk_mvp/agent.py
+from .sub_agents import new_agent
 
-MODEL = "gemini-2.0-flash"  # 選擇穩定可用的模型
-
-search_agent = Agent(
+llm_coordinator = LlmAgent(
     model=MODEL,
-    name="search_agent",
-    instruction=prompt.SEARCH_AGENT_PROMPT,
-    tools=[google_search],
+    name="llm_coordinator",
+    instruction=prompt.LLM_COORDINATOR_PROMPT,
+    tools=[
+        AgentTool(agent=search_agent),
+        AgentTool(agent=financial_agent),
+        AgentTool(agent=new_agent),  # Add here
+    ],
 )
-
-root_agent = search_agent
 ```
 
-**架構決策**:
-- 單一工具整合 (Google Search)
-- 簡潔的 Agent 結構
+### Best Practices
 
-#### 3.3 包初始化 (`adk_mvp/__init__.py`)
-```python
-"""ADK MVP with Google Search functionality"""
+- **Start Simple**: Begin with LLM-only agents before adding tools
+- **Single Responsibility**: Each agent should have a focused purpose  
+- **Test First**: Write tests before implementing functionality
+- **Error Handling**: Implement robust error handling for production use
 
-from .agent import root_agent
+## Troubleshooting
 
-__version__ = "0.1.0"
-```
+### Common Issues
 
-### 階段 4: 測試驅動驗證
-
-#### 4.1 基礎測試實現
-```python
-# tests/test_agent.py
-import pytest
-from adk_mvp.agent import root_agent
-
-def test_agent_initialization():
-    """測試 agent 是否正確初始化"""
-    assert root_agent.name == "search_agent"
-    assert root_agent.model == "gemini-2.0-flash"
-    assert len(root_agent.tools) > 0
-
-def test_agent_has_search_tool():
-    """測試 agent 是否包含搜尋工具"""
-    tool_names = [tool.__class__.__name__ for tool in root_agent.tools]
-    assert any("search" in name.lower() for name in tool_names)
-```
-
-#### 4.2 測試執行
-```bash
-poetry run pytest tests/ -v
-# 結果: 2 passed, 1 warning in 5.46s
-```
-
-**測試策略**: 先確保基本結構正確，再進行功能測試。
-
-### 階段 5: 問題排解與最佳化
-
-#### 5.1 模型可用性問題
-**遇到的錯誤**:
+**Model Not Available Error**:
 ```
 google.genai.errors.ClientError: 404 NOT_FOUND
-Publisher Model `gemini-2.0-flash` not found in asia-east1
+Publisher Model `gemini-2.0-flash` not found in [region]
+```
+**Solution**: Change `GOOGLE_CLOUD_LOCATION` to `us-central1` or use `gemini-1.5-pro`
+
+**Authentication Issues**:
+```bash
+# Re-authenticate
+gcloud auth application-default login
+gcloud config set project YOUR_PROJECT_ID
 ```
 
-**解決方案**:
-1. 調整地區設置: `us-central1`
-2. 驗證模型可用性
-
-#### 5.2 Poetry 工作流程適應
-**Poetry 2.0+ 變化**:
-- `poetry shell` → `poetry run` 或 `poetry env activate`
-- 更強調依賴隔離
-- 更適合 CI/CD 環境
-
-**推薦工作流程**:
+**Dependency Conflicts**:
 ```bash
-# 開發測試
-poetry run python -m adk_mvp.agent
-poetry run adk run adk_mvp
-poetry run pytest tests/
-
-# 依賴管理
-poetry add new-package
-poetry remove old-package
-poetry show --tree
+# Clear cache and reinstall
+poetry cache clear PyPI --all
+poetry install --no-cache
 ```
 
-### 階段 6: 成功運行
-
-#### 6.1 Agent 啟動
-```bash
-poetry run adk run adk_mvp
-# 輸出: Running agent search_agent, type exit to exit.
-```
-
-#### 6.2 功能驗證
-測試查詢範例:
-- "What is the current weather in Taiwan?"
-- "Tell me about recent AI developments"
-- "Search for Python best practices 2024"
-
-## 開發心得與最佳實踐
-
-### 1. 環境管理
-- **Poetry 2.0+**: 使用 `poetry run` 取代 `poetry shell`
-- **依賴隔離**: 每個命令都明確在正確環境中執行
-- **版本控制**: 精確指定依賴版本範圍
-
-### 2. Google Cloud 整合
-- **地區選擇**: 優先考慮模型可用性而非地理位置
-- **API 啟用**: 提前啟用所有必要的 API
-- **憑證管理**: 使用 `application-default` 認證
-
-### 3. Agent 設計
-- **簡潔原則**: 從最簡功能開始
-- **工具整合**: 一次整合一個工具
-- **測試先行**: 先確保基本結構，再添加功能
-
-### 4. 問題排解策略
-- **逐步驗證**: 每個階段都要驗證功能
-- **日誌分析**: 善用 ADK 提供的日誌系統
-- **模型降級**: 優先選擇穩定可用的模型
-
-## 技術債務與改進方向
-
-### 短期改進
-- [ ] 添加更完整的錯誤處理
-- [ ] 實現配置檔案管理
-- [ ] 添加日誌級別控制
-
-### 中期擴展
-- [ ] 多工具整合 (計算機、天氣等)
-- [ ] 會話記憶功能
-- [ ] Web UI 介面
-
-### 長期架構
-- [ ] 多代理協作系統
-- [ ] 插件化工具架構
-- [ ] 生產環境部署流程
-
-## 實用命令參考
+### Useful Commands
 
 ```bash
-# 開發環境
-poetry install                           # 安裝依賴
-poetry run pytest tests/ -v             # 運行測試
-poetry run adk run adk_mvp              # 啟動 Agent
+# Development
+poetry install                           # Install dependencies
+poetry run pytest tests/ -v             # Run tests  
+poetry run adk run adk_mvp              # Start agents
 
 # Google Cloud
-gcloud auth list                         # 檢查認證狀態
-gcloud services list --enabled          # 查看已啟用的 API
-gcloud config list                       # 查看配置
+gcloud auth list                         # Check auth status
+gcloud services list --enabled          # View enabled APIs
+gcloud config list                       # View configuration
 
-# 除錯
-poetry env info                          # 查看環境資訊
-tail -F /tmp/agents_log/agent.latest.log # 查看日誌
+# Debugging  
+poetry env info                          # Environment info
+tail -F /tmp/agents_log/agent.latest.log # View logs
 ```
 
-## 結語
+## License
 
-這個 MVP 開發過程展示了現代 Python AI 應用開發的完整流程，從環境管理到雲端整合，從測試驗證到問題排解。每個步驟都記錄了實際遇到的問題和解決方案，為後續開發提供了寶貴的參考。
-
-**核心收穫**: 
-- 工具選擇的重要性 (Poetry 2.0+, ADK)
-- 雲端服務整合的複雜性
-- 測試驅動開發的價值
-- 逐步迭代的開發方法論
+This project is licensed under the MIT License - see the LICENSE file for details.
